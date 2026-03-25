@@ -1,0 +1,34 @@
+{
+    "name": "super-kernel/annotator",
+    "description": "the annotator component for super-kernel.",
+    "type": "library",
+    "license": "MIT",
+    "keywords": [
+        "php",
+        "super-kernel",
+        "annotator"
+    ],
+    "homepage": "https://github.com/super-kernel/annotator",
+    "support": {
+        "issues": "https://github.com/super-kernel/annotator/issues",
+        "source": "https://github.com/super-kernel/annotator"
+    },
+    "autoload": {
+        "psr-4": {
+            "SuperKernel\\Annotator\\": "src/"
+        }
+    },
+    "minimum-stability": "stable",
+    "prefer-stable": true,
+    "config": {
+        "classmap-authoritative": true,
+        "optimize-autoloader": true,
+        "sort-packages": true
+    },
+    "require": {
+        "php": "~8.4.0",
+        "super-kernel/attribute": "~1.0.0",
+        "super-kernel/contract": "~1.0.0",
+        "super-kernel/process-handler": "~1.0.0"
+    }
+}
