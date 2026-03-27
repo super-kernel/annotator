@@ -142,7 +142,7 @@ final readonly class AnnotationCollectorFactory
 		return $this->cacheDir->to("$fileName.cache")->get();
 	}
 
-	private function addAttribute(array|Reflector $reflector): array
+	public static function addAttribute(array|Reflector $reflector): array
 	{
 		$reflectors = $reflector instanceof Reflector ? [$reflector] : $reflector;
 
@@ -154,7 +154,7 @@ final readonly class AnnotationCollectorFactory
 			foreach ($reflector->getAttributes() as $attribute) {
 				$attributes[] = new Annotation($reflector, $attribute);
 				if ($reflector instanceof ReflectionMethod) {
-					$attributes = array_merge($attributes, $this->addAttribute($reflector->getParameters()));
+					$attributes = array_merge($attributes, self::addAttribute($reflector->getParameters()));
 				}
 			}
 		}
