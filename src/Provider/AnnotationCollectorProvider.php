@@ -3,14 +3,13 @@ declare(strict_types=1);
 
 namespace SuperKernel\Annotator\Provider;
 
+use Psr\Container\ContainerExceptionInterface;
+use Psr\Container\ContainerInterface;
+use Psr\Container\NotFoundExceptionInterface;
 use SuperKernel\Annotator\Factory\AnnotationCollectorFactory;
 use SuperKernel\Attribute\Factory;
 use SuperKernel\Attribute\Provider;
 use SuperKernel\Contract\AnnotationCollectorInterface;
-use SuperKernel\Contract\PackageCollectorInterface;
-use SuperKernel\Contract\PathResolverInterface;
-use SuperKernel\Contract\ReflectionCollectorInterface;
-use SuperKernel\ProcessHandler\Contract\ProcessHandlerInterface;
 
 #[
 	Provider(AnnotationCollectorInterface::class),
@@ -20,20 +19,17 @@ final class AnnotationCollectorProvider
 {
 	private static AnnotationCollectorInterface $annotationCollector;
 
-	public function __invoke(
-		PathResolverInterface        $pathResolver,
-		ProcessHandlerInterface      $processHandler,
-		PackageCollectorInterface    $packageCollector,
-		ReflectionCollectorInterface $reflectionCollector,
-	): AnnotationCollectorInterface
+	/**
+	 * @param ContainerInterface $container
+	 *
+	 * @return AnnotationCollectorInterface
+	 * @throws ContainerExceptionInterface
+	 * @throws NotFoundExceptionInterface
+	 */
+	public function __invoke(ContainerInterface $container): AnnotationCollectorInterface
 	{
 		if (!isset(self::$annotationCollector)) {
-			self::$annotationCollector = new AnnotationCollectorFactory(
-				$pathResolver,
-				$processHandler,
-				$packageCollector,
-				$reflectionCollector,
-			)->create();
+			self::$annotationCollector = $container->get(AnnotationCollectorFactory::class)->create();
 		}
 		return self::$annotationCollector;
 	}
