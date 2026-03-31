@@ -13,17 +13,27 @@ final readonly class AnnotationCollector implements AnnotationCollectorInterface
 	 */
 	private array $attributes;
 
-	public function __construct(AnnotationInterface ...$attributeMetadataCollection)
+	public function __construct(AnnotationInterface ...$annotations)
 	{
 		$attributes = [];
-		foreach ($attributeMetadataCollection as $attributeMetadata) {
-			$class = $attributeMetadata->getClass();
-			if ($attributeMetadata->compatible(AnnotationInterface::TARGET_CLASS)) {
-				$attributes[$class][AnnotationInterface::TARGET_CLASS][] = $attributeMetadata;
-			} elseif ($attributeMetadata->compatible(AnnotationInterface::TARGET_METHOD)) {
-				$attributes[$class][AnnotationInterface::TARGET_METHOD][$attributeMetadata->getMethod()][] = $attributeMetadata;
-			} elseif ($attributeMetadata->compatible(AnnotationInterface::TARGET_PROPERTY)) {
-				$attributes[$class][AnnotationInterface::TARGET_PROPERTY][$attributeMetadata->getProperty()][] = $attributeMetadata;
+		foreach ($annotations as $annotation) {
+			if (
+				!$annotation->compatible(
+					AnnotationInterface::TARGET_CLASS
+					| AnnotationInterface::TARGET_METHOD
+					| AnnotationInterface::TARGET_PROPERTY,
+				)
+			) {
+				continue;
+			}
+
+			$class = $annotation->getClass();
+			if ($annotation->compatible(AnnotationInterface::TARGET_CLASS)) {
+				$attributes[$class][AnnotationInterface::TARGET_CLASS][] = $annotation;
+			} elseif ($annotation->compatible(AnnotationInterface::TARGET_METHOD)) {
+				$attributes[$class][AnnotationInterface::TARGET_METHOD][$annotation->getMethod()][] = $annotation;
+			} elseif ($annotation->compatible(AnnotationInterface::TARGET_PROPERTY)) {
+				$attributes[$class][AnnotationInterface::TARGET_PROPERTY][$annotation->getProperty()][] = $annotation;
 			}
 		}
 
