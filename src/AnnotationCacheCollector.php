@@ -3,7 +3,7 @@ declare(strict_types=1);
 
 namespace SuperKernel\Annotator;
 
-use SuperKernel\Contract\AnnotationInterface;
+use SuperKernel\Annotator\Contract\AnnotationInterface;
 
 final readonly class AnnotationCacheCollector
 {

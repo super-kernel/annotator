@@ -3,116 +3,55 @@ declare(strict_types=1);
 
 namespace SuperKernel\Annotator;
 
-use SuperKernel\Contract\AnnotationCollectorInterface;
-use SuperKernel\Contract\AnnotationInterface;
+use SuperKernel\Annotator\Annotation\ClassAnnotation;
+use SuperKernel\Annotator\Annotation\MethodAnnotation;
+use SuperKernel\Annotator\Annotation\PropertyAnnotation;
+use SuperKernel\Annotator\Contract\AnnotationCollectorInterface;
+use SuperKernel\Annotator\Contract\AnnotationInterface;
 
 final readonly class AnnotationCollector implements AnnotationCollectorInterface
 {
 	/**
-	 * @var array<string, AnnotationInterface> $attributes
+	 * @var array<AnnotationInterface> $annotations
 	 */
-	private array $attributes;
+	private array $annotations;
 
 	public function __construct(AnnotationInterface ...$annotations)
 	{
-		$attributes = [];
-		foreach ($annotations as $annotation) {
-			if (
-				!$annotation->compatible(
-					AnnotationInterface::TARGET_CLASS
-					| AnnotationInterface::TARGET_METHOD
-					| AnnotationInterface::TARGET_PROPERTY,
-				)
-			) {
-				continue;
-			}
-
-			$class = $annotation->getClass();
-			if ($annotation->compatible(AnnotationInterface::TARGET_CLASS)) {
-				$attributes[$class][AnnotationInterface::TARGET_CLASS][] = $annotation;
-			} elseif ($annotation->compatible(AnnotationInterface::TARGET_METHOD)) {
-				$attributes[$class][AnnotationInterface::TARGET_METHOD][$annotation->getMethod()][] = $annotation;
-			} elseif ($annotation->compatible(AnnotationInterface::TARGET_PROPERTY)) {
-				$attributes[$class][AnnotationInterface::TARGET_PROPERTY][$annotation->getProperty()][] = $annotation;
-			}
-		}
-
-		$this->attributes = $attributes;
 	}
 
-	public function getClassAttributes(string $class): array
+	public function getAnnotationsByClass(string $class): array
 	{
-		return $this->attributes[$class][AnnotationInterface::TARGET_CLASS] ?? [];
+		// TODO: Implement getAnnotationsByClass() method.
 	}
 
-	public function getMethodAttributes(string $class, string $method): array
+	public function getAnnotationsByMethod(string $class, string $method): array
 	{
-		return $this->attributes[$class][AnnotationInterface::TARGET_METHOD][$method] ?? [];
+		// TODO: Implement getAnnotationsByMethod() method.
 	}
 
-	public function getPropertyAttributes(string $class, string $property): array
+	public function getAnnotationsByProperty(string $class, string $property): array
 	{
-		return $this->attributes[$class][AnnotationInterface::TARGET_PROPERTY][$property] ?? [];
+		// TODO: Implement getAnnotationsByProperty() method.
 	}
 
 	public function getClassesByAttribute(string $attribute): array
 	{
-		$attributes = [];
-
-		foreach ($this->attributes as $targets) {
-			if (!isset($targets[AnnotationInterface::TARGET_CLASS])) {
-				continue;
-			}
-
-			/* @var AnnotationInterface $classAttribute */
-			foreach ($targets[AnnotationInterface::TARGET_CLASS] ?? [] as $classAttribute) {
-				if ($classAttribute->getAttribute() === $attribute) {
-					$attributes[] = $classAttribute;
-				}
-			}
-		}
-
-		return $attributes;
+		// TODO: Implement getClassesByAttribute() method.
 	}
 
 	public function getMethodsByAttribute(string $attribute): array
 	{
-		$attributes = [];
-
-		foreach ($this->attributes as $targets) {
-			if (!isset($targets[AnnotationInterface::TARGET_METHOD])) {
-				continue;
-			}
-			foreach ($targets[AnnotationInterface::TARGET_METHOD] ?? [] as $methods) {
-				foreach ($methods as $method) {
-					if ($method->getAttribute() === $attribute) {
-						$attributes[] = $method;
-					}
-				}
-			}
-		}
-
-		return $attributes;
+		// TODO: Implement getMethodsByAttribute() method.
 	}
 
 	public function getPropertiesByAttribute(string $attribute): array
 	{
-		$attributes = [];
+		// TODO: Implement getPropertiesByAttribute() method.
+	}
 
-		foreach ($this->attributes as $targets) {
-			if (!isset($targets[AnnotationInterface::TARGET_PROPERTY])) {
-				continue;
-			}
-
-			foreach ($targets[AnnotationInterface::TARGET_PROPERTY] ?? [] as $properties) {
-				foreach ($properties as $property) {
-					if ($property->getAttribute() === $attribute) {
-						$attributes[] = $property;
-					}
-				}
-			}
-		}
-
-		return $attributes;
+	public function getPropertiesByClassConstant(string $attribute): array
+	{
+		// TODO: Implement getPropertiesByClassConstant() method.
 	}
 }
