@@ -4,10 +4,6 @@ declare(strict_types=1);
 namespace SuperKernel\Annotator\Provider;
 
 use RuntimeException;
-use SuperKernel\Annotator\Annotation\ClassAnnotation;
-use SuperKernel\Annotator\Annotation\ClassConstantAnnotation;
-use SuperKernel\Annotator\Annotation\MethodAnnotation;
-use SuperKernel\Annotator\Annotation\PropertyAnnotation;
 use SuperKernel\Annotator\AnnotationCacheCollector;
 use SuperKernel\Annotator\AnnotationCollector;
 use SuperKernel\Annotator\AnnotationExtractor;
@@ -90,18 +86,7 @@ final readonly class AnnotationCollectorProvider
 	private function loadAttributeMetadataCacheCollector(string $cacheFile): ?AnnotationCacheCollector
 	{
 		if (file_exists($cacheFile)) {
-			$annotationCacheCollector = unserialize(
-				data   : @file_get_contents($cacheFile),
-				options: [
-					         'allowed_classes' => [
-						         ClassAnnotation::class,
-						         MethodAnnotation::class,
-						         PropertyAnnotation::class,
-						         ClassConstantAnnotation::class,
-						         AnnotationCacheCollector::class,
-					         ],
-				         ],
-			);
+			$annotationCacheCollector = unserialize(@file_get_contents($cacheFile));
 			if ($annotationCacheCollector instanceof AnnotationCacheCollector) {
 				return $annotationCacheCollector;
 			}
