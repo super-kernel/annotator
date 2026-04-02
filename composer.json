@@ -18,17 +18,27 @@
             "SuperKernel\\Annotator\\": "src/"
         }
     },
-    "minimum-stability": "stable",
-    "prefer-stable": true,
+    "autoload-dev": {
+        "psr-4": {
+            "SuperKernelTest\\Annotator\\": "tests/"
+        }
+    },
     "config": {
         "classmap-authoritative": true,
         "optimize-autoloader": true,
         "sort-packages": true
     },
+    "extra": {
+        "branch-alias": {
+            "dev-main": "1.0.x-dev"
+        }
+    },
+    "minimum-stability": "stable",
+    "prefer-stable": true,
     "require": {
         "php": "~8.4.0",
-        "super-kernel/attribute": "~1.0.0",
-        "super-kernel/contract": "~1.0.0",
-        "super-kernel/process-handler": "~1.0.0"
+        "super-kernel/attribute": "dev-main",
+        "super-kernel/contract": "dev-main",
+        "super-kernel/process-handler": "dev-main"
     }
 }

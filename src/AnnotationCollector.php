@@ -3,116 +3,183 @@ declare(strict_types=1);
 
 namespace SuperKernel\Annotator;
 
+use SuperKernel\Annotator\Annotation\ClassAnnotation;
+use SuperKernel\Annotator\Annotation\ClassConstantAnnotation;
+use SuperKernel\Annotator\Annotation\MethodAnnotation;
+use SuperKernel\Annotator\Annotation\PropertyAnnotation;
 use SuperKernel\Contract\AnnotationCollectorInterface;
 use SuperKernel\Contract\AnnotationInterface;
 
 final readonly class AnnotationCollector implements AnnotationCollectorInterface
 {
 	/**
-	 * @var array<string, AnnotationInterface> $attributes
+	 * @var array<AnnotationInterface> $annotations
 	 */
-	private array $attributes;
+	private array $annotations;
 
 	public function __construct(AnnotationInterface ...$annotations)
 	{
-		$attributes = [];
-		foreach ($annotations as $annotation) {
-			if (
-				!$annotation->compatible(
-					AnnotationInterface::TARGET_CLASS
-					| AnnotationInterface::TARGET_METHOD
-					| AnnotationInterface::TARGET_PROPERTY,
-				)
-			) {
-				continue;
-			}
+		$storage = [
+			AnnotationInterface::TARGET_CLASS          => [],
+			AnnotationInterface::TARGET_METHOD         => [],
+			AnnotationInterface::TARGET_PROPERTY       => [],
+			AnnotationInterface::TARGET_CLASS_CONSTANT => [],
+			AnnotationInterface::TARGET_ALL            => [],
+		];
 
+		foreach ($annotations as $annotation) {
 			$class = $annotation->getClass();
-			if ($annotation->compatible(AnnotationInterface::TARGET_CLASS)) {
-				$attributes[$class][AnnotationInterface::TARGET_CLASS][] = $annotation;
-			} elseif ($annotation->compatible(AnnotationInterface::TARGET_METHOD)) {
-				$attributes[$class][AnnotationInterface::TARGET_METHOD][$annotation->getMethod()][] = $annotation;
-			} elseif ($annotation->compatible(AnnotationInterface::TARGET_PROPERTY)) {
-				$attributes[$class][AnnotationInterface::TARGET_PROPERTY][$annotation->getProperty()][] = $annotation;
+			$name = $annotation->getName();
+
+			$storage[AnnotationInterface::TARGET_ALL][$name][] = $annotation;
+
+			if ($annotation instanceof ClassAnnotation) {
+				$storage[AnnotationInterface::TARGET_CLASS][$class][] = $annotation;
+			} elseif ($annotation instanceof MethodAnnotation) {
+				$storage[AnnotationInterface::TARGET_METHOD][$class][$annotation->getMethod()][] = $annotation;
+			} elseif ($annotation instanceof PropertyAnnotation) {
+				$storage[AnnotationInterface::TARGET_PROPERTY][$class][$annotation->getProperty()][] = $annotation;
+			} elseif ($annotation instanceof ClassConstantAnnotation) {
+				$storage[AnnotationInterface::TARGET_CLASS_CONSTANT][$class][$annotation->getConstant()][] = $annotation;
 			}
 		}
 
-		$this->attributes = $attributes;
+		$this->annotations = $storage;
 	}
 
-	public function getClassAttributes(string $class): array
+	/**
+	 * {@inheritDoc}
+	 */
+	public function getAnnotationsByClass(string $class): array
 	{
-		return $this->attributes[$class][AnnotationInterface::TARGET_CLASS] ?? [];
+		$annotations = [];
+		foreach ($this->annotations as $annotation) {
+			if (!($annotation instanceof ClassAnnotation)) {
+				continue;
+			}
+			if ($annotation->getClass() === $class) {
+				$annotations[] = $annotation;
+			}
+		}
+		return $annotations;
 	}
 
-	public function getMethodAttributes(string $class, string $method): array
+	/**
+	 * {@inheritDoc}
+	 */
+	public function getAnnotationsByMethod(string $class, string $method): array
 	{
-		return $this->attributes[$class][AnnotationInterface::TARGET_METHOD][$method] ?? [];
+		$annotations = [];
+		foreach ($this->annotations as $annotation) {
+			if (!($annotation instanceof MethodAnnotation)) {
+				continue;
+			}
+			if ($annotation->getClass() === $class && $annotation->getMethod() === $method) {
+				$annotations[] = $annotation;
+			}
+		}
+		return $annotations;
 	}
 
-	public function getPropertyAttributes(string $class, string $property): array
+	/**
+	 * {@inheritDoc}
+	 */
+	public function getAnnotationsByProperty(string $class, string $property): array
 	{
-		return $this->attributes[$class][AnnotationInterface::TARGET_PROPERTY][$property] ?? [];
+		$annotations = [];
+		foreach ($this->annotations as $annotation) {
+			if (!($annotation instanceof PropertyAnnotation)) {
+				continue;
+			}
+			if ($annotation->getClass() === $class && $annotation->getProperty() === $property) {
+				$annotations[] = $annotation;
+			}
+		}
+		return $annotations;
 	}
 
+	/**
+	 * {@inheritDoc}
+	 */
+	public function getAnnotationsByClassConstant(string $class, string $constant): array
+	{
+		$annotations = [];
+		foreach ($this->annotations as $annotation) {
+			if (!($annotation instanceof ClassConstantAnnotation)) {
+				continue;
+			}
+			if ($annotation->getClass() === $class && $annotation->getConstant() === $constant) {
+				$annotations[] = $annotation;
+			}
+		}
+		return $annotations;
+	}
+
+	/**
+	 * {@inheritDoc}
+	 */
 	public function getClassesByAttribute(string $attribute): array
 	{
-		$attributes = [];
-
-		foreach ($this->attributes as $targets) {
-			if (!isset($targets[AnnotationInterface::TARGET_CLASS])) {
+		$annotations = [];
+		foreach ($this->annotations as $annotation) {
+			if (!($annotation instanceof ClassAnnotation)) {
 				continue;
 			}
-
-			/* @var AnnotationInterface $classAttribute */
-			foreach ($targets[AnnotationInterface::TARGET_CLASS] ?? [] as $classAttribute) {
-				if ($classAttribute->getAttribute() === $attribute) {
-					$attributes[] = $classAttribute;
-				}
+			if ($annotation->getName() === $attribute) {
+				$annotations[] = $annotation;
 			}
 		}
-
-		return $attributes;
+		return $annotations;
 	}
 
+	/**
+	 * {@inheritDoc}
+	 */
 	public function getMethodsByAttribute(string $attribute): array
 	{
-		$attributes = [];
-
-		foreach ($this->attributes as $targets) {
-			if (!isset($targets[AnnotationInterface::TARGET_METHOD])) {
+		$annotations = [];
+		foreach ($this->annotations as $annotation) {
+			if (!($annotation instanceof MethodAnnotation)) {
 				continue;
 			}
-			foreach ($targets[AnnotationInterface::TARGET_METHOD] ?? [] as $methods) {
-				foreach ($methods as $method) {
-					if ($method->getAttribute() === $attribute) {
-						$attributes[] = $method;
-					}
-				}
+			if ($annotation->getName() === $attribute) {
+				$annotations[] = $annotation;
 			}
 		}
-
-		return $attributes;
+		return $annotations;
 	}
 
+	/**
+	 * {@inheritDoc}
+	 */
 	public function getPropertiesByAttribute(string $attribute): array
 	{
-		$attributes = [];
-
-		foreach ($this->attributes as $targets) {
-			if (!isset($targets[AnnotationInterface::TARGET_PROPERTY])) {
+		$annotations = [];
+		foreach ($this->annotations as $annotation) {
+			if (!($annotation instanceof PropertyAnnotation)) {
 				continue;
 			}
-
-			foreach ($targets[AnnotationInterface::TARGET_PROPERTY] ?? [] as $properties) {
-				foreach ($properties as $property) {
-					if ($property->getAttribute() === $attribute) {
-						$attributes[] = $property;
-					}
-				}
+			if ($annotation->getName() === $attribute) {
+				$annotations[] = $annotation;
 			}
 		}
+		return $annotations;
+	}
 
-		return $attributes;
+	/**
+	 * {@inheritDoc}
+	 */
+	public function getClassConstantsByAttribute(string $attribute): array
+	{
+		$annotations = [];
+		foreach ($this->annotations as $annotation) {
+			if (!($annotation instanceof ClassConstantAnnotation)) {
+				continue;
+			}
+			if ($annotation->getName() === $attribute) {
+				$annotations[] = $annotation;
+			}
+		}
+		return $annotations;
 	}
 }

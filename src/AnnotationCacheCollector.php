@@ -9,11 +9,7 @@ final readonly class AnnotationCacheCollector
 {
 	private array $attributeMetadataCollection;
 
-	public function __construct(
-		private string      $name,
-		private ?string     $reference,
-		AnnotationInterface ...$attributeMetadataCollection
-	)
+	public function __construct(private string $name, private ?string $reference, AnnotationInterface ...$attributeMetadataCollection)
 	{
 		$this->attributeMetadataCollection = $attributeMetadataCollection;
 	}
