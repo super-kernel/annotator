@@ -41,7 +41,7 @@ final readonly class AnnotationCollectorProvider
 	private PathResolverInterface $cacheDir;
 
 	public function __construct(
-		PathResolverInterface                $pathResolver,
+		private PathResolverInterface        $pathResolver,
 		private ProcessHandlerInterface      $processHandler,
 		private PackageCollectorInterface    $packageCollector,
 		private ReflectionCollectorInterface $reflectionCollector,
@@ -70,7 +70,7 @@ final readonly class AnnotationCollectorProvider
 				$reference !== $package->getReference()
 			) {
 				$annotations = new AnnotationExtractor(
-					$package->getClassAutoloader(),
+					$package->getClassAutoloader($this->pathResolver),
 					$this->reflectionCollector,
 				)->getAnnotations();
 
