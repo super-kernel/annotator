@@ -28,17 +28,17 @@
         "optimize-autoloader": true,
         "sort-packages": true
     },
-    "extra": {
-        "branch-alias": {
-            "dev-main": "1.0.x-dev"
-        }
-    },
-    "minimum-stability": "stable",
+    "minimum-stability": "dev",
     "prefer-stable": true,
     "require": {
         "php": "~8.4.0",
         "super-kernel/attribute": "dev-main",
         "super-kernel/contract": "dev-main",
         "super-kernel/process-handler": "dev-main"
+    },
+    "require-dev": {
+        "super-kernel/bootstrap": "dev-main",
+        "super-kernel/event-dispatcher": "dev-main",
+        "super-kernel/framework": "dev-main"
     }
 }
