@@ -53,10 +53,7 @@ final readonly class AnnotationCollector implements AnnotationCollectorInterface
 	public function getAnnotationsByClass(string $class): array
 	{
 		$annotations = [];
-		foreach ($this->annotations as $annotation) {
-			if (!($annotation instanceof ClassAnnotation)) {
-				continue;
-			}
+		foreach ($this->annotations[AnnotationInterface::TARGET_CLASS] ?? [] as $annotation) {
 			if ($annotation->getClass() === $class) {
 				$annotations[] = $annotation;
 			}
@@ -70,10 +67,7 @@ final readonly class AnnotationCollector implements AnnotationCollectorInterface
 	public function getAnnotationsByMethod(string $class, string $method): array
 	{
 		$annotations = [];
-		foreach ($this->annotations as $annotation) {
-			if (!($annotation instanceof MethodAnnotation)) {
-				continue;
-			}
+		foreach ($this->annotations[AnnotationInterface::TARGET_METHOD] ?? [] as $annotation) {
 			if ($annotation->getClass() === $class && $annotation->getMethod() === $method) {
 				$annotations[] = $annotation;
 			}
@@ -87,7 +81,7 @@ final readonly class AnnotationCollector implements AnnotationCollectorInterface
 	public function getAnnotationsByProperty(string $class, string $property): array
 	{
 		$annotations = [];
-		foreach ($this->annotations as $annotation) {
+		foreach ($this->annotations[AnnotationInterface::TARGET_PROPERTY] ?? [] as $annotation) {
 			if (!($annotation instanceof PropertyAnnotation)) {
 				continue;
 			}
@@ -104,10 +98,7 @@ final readonly class AnnotationCollector implements AnnotationCollectorInterface
 	public function getAnnotationsByClassConstant(string $class, string $constant): array
 	{
 		$annotations = [];
-		foreach ($this->annotations as $annotation) {
-			if (!($annotation instanceof ClassConstantAnnotation)) {
-				continue;
-			}
+		foreach ($this->annotations[AnnotationInterface::TARGET_CLASS_CONSTANT] ?? [] as $annotation) {
 			if ($annotation->getClass() === $class && $annotation->getConstant() === $constant) {
 				$annotations[] = $annotation;
 			}
@@ -121,11 +112,8 @@ final readonly class AnnotationCollector implements AnnotationCollectorInterface
 	public function getClassesByAttribute(string $attribute): array
 	{
 		$annotations = [];
-		foreach ($this->annotations as $annotation) {
-			if (!($annotation instanceof ClassAnnotation)) {
-				continue;
-			}
-			if ($annotation->getName() === $attribute) {
+		foreach ($this->annotations[AnnotationInterface::TARGET_ALL][$attribute] ?? [] as $annotation) {
+			if ($annotation instanceof ClassAnnotation) {
 				$annotations[] = $annotation;
 			}
 		}
@@ -138,11 +126,8 @@ final readonly class AnnotationCollector implements AnnotationCollectorInterface
 	public function getMethodsByAttribute(string $attribute): array
 	{
 		$annotations = [];
-		foreach ($this->annotations as $annotation) {
-			if (!($annotation instanceof MethodAnnotation)) {
-				continue;
-			}
-			if ($annotation->getName() === $attribute) {
+		foreach ($this->annotations[AnnotationInterface::TARGET_ALL][$attribute] ?? [] as $annotation) {
+			if ($annotation instanceof MethodAnnotation) {
 				$annotations[] = $annotation;
 			}
 		}
@@ -155,11 +140,8 @@ final readonly class AnnotationCollector implements AnnotationCollectorInterface
 	public function getPropertiesByAttribute(string $attribute): array
 	{
 		$annotations = [];
-		foreach ($this->annotations as $annotation) {
-			if (!($annotation instanceof PropertyAnnotation)) {
-				continue;
-			}
-			if ($annotation->getName() === $attribute) {
+		foreach ($this->annotations[AnnotationInterface::TARGET_ALL][$attribute] ?? [] as $annotation) {
+			if ($annotation instanceof PropertyAnnotation) {
 				$annotations[] = $annotation;
 			}
 		}
@@ -172,11 +154,8 @@ final readonly class AnnotationCollector implements AnnotationCollectorInterface
 	public function getClassConstantsByAttribute(string $attribute): array
 	{
 		$annotations = [];
-		foreach ($this->annotations as $annotation) {
-			if (!($annotation instanceof ClassConstantAnnotation)) {
-				continue;
-			}
-			if ($annotation->getName() === $attribute) {
+		foreach ($this->annotations[AnnotationInterface::TARGET_ALL][$attribute] ?? [] as $annotation) {
+			if ($annotation instanceof ClassConstantAnnotation) {
 				$annotations[] = $annotation;
 			}
 		}
