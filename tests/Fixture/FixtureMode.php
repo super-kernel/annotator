@@ -1,0 +1,10 @@
+<?php
+
+declare(strict_types=1);
+
+namespace SuperKernel\Annotator\Tests\Fixture;
+
+enum FixtureMode
+{
+    case Ready;
+}
