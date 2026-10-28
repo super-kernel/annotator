@@ -1,0 +1,35 @@
+{
+    "name": "super-kernel/annotator",
+    "description": "Isolated package-aware PHP attribute collection for SuperKernel.",
+    "type": "library",
+    "license": "MIT",
+    "require": {
+        "php": ">=8.4.27 <8.5",
+        "ext-reflection": "*",
+        "ext-tokenizer": "*",
+        "super-kernel/attribute": "dev-main",
+        "super-kernel/contract": "dev-main",
+        "super-kernel/scan-isolation": "dev-main"
+    },
+    "require-dev": {
+        "friendsofphp/php-cs-fixer": "^3.95.27",
+        "phpunit/phpunit": "^13.4.3"
+    },
+    "autoload": {
+        "psr-4": {
+            "SuperKernel\\Annotator\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "SuperKernel\\Annotator\\Tests\\": "tests/"
+        }
+    },
+    "minimum-stability": "dev",
+    "prefer-stable": true,
+    "scripts": {
+        "format": "@php vendor/bin/php-cs-fixer fix --show-progress=bar --no-ansi",
+        "format:check": "@php vendor/bin/php-cs-fixer check --show-progress=bar --no-ansi --diff",
+        "test": "@php vendor/bin/phpunit"
+    }
+}
