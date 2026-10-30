@@ -99,6 +99,7 @@ final class AnnotationCollectorProviderTest extends TestCase
         );
     }
 
+    /** @throws Throwable When fixture setup or the operation under test throws */
     public function testRejectsAnUnsupportedProcessorBeforeStartingTheProviderLifecycle(): void
     {
         $processor = new CallbackScanProcessor(false);

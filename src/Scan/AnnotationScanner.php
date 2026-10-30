@@ -89,9 +89,21 @@ final readonly class AnnotationScanner
 
             foreach ($classMap as $class => $path) {
                 try {
-                    $containsAttributes = $attributeFiles[$path] ??= self::containsAttributes($path);
+                    // Tokenize each successfully read source path once and skip files without native Attributes.
+                    if (!isset($attributeFiles[$path])) {
+                        $source = @file_get_contents($path);
 
-                    if (!$containsAttributes) {
+                        if (false === $source) {
+                            throw new RuntimeException(sprintf('Unable to read class source file %s.', $path));
+                        }
+
+                        $attributeFiles[$path] = array_any(
+                            token_get_all($source),
+                            static fn($token) => is_array($token) && T_ATTRIBUTE === $token[0],
+                        );
+                    }
+
+                    if (!$attributeFiles[$path]) {
                         continue;
                     }
 
@@ -147,16 +159,4 @@ final readonly class AnnotationScanner
 
         return $packages;
     }
-
-    private static function containsAttributes(string $path): bool
-    {
-        $source = @file_get_contents($path);
-
-        if (false === $source) {
-            throw new RuntimeException(sprintf('Unable to read class source file %s.', $path));
-        }
-
-        return array_any(token_get_all($source), fn($token) => is_array($token) && T_ATTRIBUTE === $token[0]);
-    }
-
 }

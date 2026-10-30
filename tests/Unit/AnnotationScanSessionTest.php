@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace SuperKernel\Annotator\Tests\Unit;
 
 use SuperKernel\Annotator\Cache\AnnotationCache;
+use SuperKernel\Annotator\Constants\CacheLayout;
 use SuperKernel\Annotator\Exception\AnnotationScanException;
 use SuperKernel\Annotator\Model\PackageAnnotations;
 use SuperKernel\Annotator\Scan\AnnotationScanner;
@@ -44,11 +45,11 @@ final class AnnotationScanSessionTest extends TestCase
         );
 
         $session->scan();
-        self::assertFalse($vendorDir->exists(AnnotationCache::INDEX_PATH));
+        self::assertFalse($vendorDir->exists(CacheLayout::IndexPath->value));
 
         unset($session);
 
-        self::assertTrue($vendorDir->exists(AnnotationCache::INDEX_PATH));
+        self::assertTrue($vendorDir->exists(CacheLayout::IndexPath->value));
         self::assertNotEmpty($cache->read($manager)->getClassAttributes($class));
     }
 
@@ -81,8 +82,8 @@ final class AnnotationScanSessionTest extends TestCase
         } finally {
             unset($session);
 
-            self::assertFalse($vendorDir->exists(AnnotationCache::INDEX_PATH));
-            self::assertFalse($vendorDir->exists(AnnotationCache::PACKAGE_DIRECTORY));
+            self::assertFalse($vendorDir->exists(CacheLayout::IndexPath->value));
+            self::assertFalse($vendorDir->exists(CacheLayout::PackageDirectory->value));
         }
     }
 

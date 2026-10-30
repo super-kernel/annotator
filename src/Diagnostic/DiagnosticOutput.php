@@ -17,6 +17,10 @@ use const STDERR;
 /** Emergency output shared by direct scanners and failed bootstrap operations. */
 final readonly class DiagnosticOutput
 {
+    /** ANSI yellow warning template receiving the class, exception type, and message fields. */
+    private const string WARNING_FORMAT
+        = "\033[33mAnnotation scan warning: Skipping class %s because %s was thrown: %s.\033[0m";
+
     /**
      * @param array{sequence: int, package: string, class: string, exception_type: string, message: string} $diagnostic
      *
@@ -25,7 +29,7 @@ final readonly class DiagnosticOutput
     public static function formatWarning(array $diagnostic): string
     {
         return sprintf(
-            "\033[33mAnnotation scan warning: Skipping class %s because %s was thrown: %s.\033[0m",
+            self::WARNING_FORMAT,
             $diagnostic['class'],
             $diagnostic['exception_type'],
             $diagnostic['message'],
@@ -42,7 +46,12 @@ final readonly class DiagnosticOutput
     public static function writeToStderr(array $diagnostics): void
     {
         foreach ($diagnostics as $diagnostic) {
-            $line = self::formatWarning($diagnostic) . PHP_EOL;
+            $line = sprintf(
+                self::WARNING_FORMAT,
+                $diagnostic['class'],
+                $diagnostic['exception_type'],
+                $diagnostic['message'],
+            ) . PHP_EOL;
 
             while ('' !== $line) {
                 $written = @fwrite(STDERR, $line);
