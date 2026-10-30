@@ -13,10 +13,6 @@ use Throwable;
 
 final class AnnotationScanWorker
 {
-    private function __construct()
-    {
-    }
-
     /** @throws Throwable When the package scan cannot complete */
     public static function run(
         PackageManagerInterface $packageManager,

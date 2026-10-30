@@ -9,6 +9,7 @@ use ReflectionClass;
 use SuperKernel\Annotator\Cache\AnnotationCache;
 use SuperKernel\Annotator\Cache\SerializedPackageAnnotations;
 use SuperKernel\Annotator\Cache\SerializedPackageReferences;
+use SuperKernel\Annotator\Constants\CacheLayout;
 use SuperKernel\Annotator\Exception\AnnotationCacheException;
 use SuperKernel\Annotator\Model\AttributeMetadata;
 use SuperKernel\Annotator\Model\PackageAnnotations;
@@ -44,7 +45,7 @@ final class AnnotationCacheTest extends TestCase
         ]);
         $vendorDir = new TemporaryVendorDirectory();
         $vendorDir->write('annotations/acme/legacy.ser', $contents);
-        $vendorDir->write(AnnotationCache::INDEX_PATH, serialize(new SerializedPackageReferences([
+        $vendorDir->write(CacheLayout::IndexPath->value, serialize(new SerializedPackageReferences([
             'acme/legacy' => 'before-metadata-contracts',
         ])));
 
@@ -71,7 +72,7 @@ final class AnnotationCacheTest extends TestCase
         self::assertArrayHasKey('packages.ser', $vendorDir->files());
         self::assertStringNotContainsString(
             'schemaVersion',
-            $vendorDir->read(AnnotationCache::INDEX_PATH),
+            $vendorDir->read(CacheLayout::IndexPath->value),
         );
         self::assertArrayHasKey(
             'annotations/acme/fixture.ser',
@@ -309,7 +310,7 @@ final class AnnotationCacheTest extends TestCase
     public static function legacyCacheEntries(): iterable
     {
         yield 'reference stub' => [
-            AnnotationCache::INDEX_PATH,
+            CacheLayout::IndexPath->value,
             'SuperKernel\\Annotator\\Internal\\SerializedPackageReferences',
             [
                 'references' => [
@@ -332,7 +333,7 @@ final class AnnotationCacheTest extends TestCase
     {
         $vendorDir = new TemporaryVendorDirectory();
         $vendorDir->write(
-            AnnotationCache::INDEX_PATH,
+            CacheLayout::IndexPath->value,
             serialize(new ReflectionClass(SerializedPackageReferences::class)->newInstanceWithoutConstructor()),
         );
 

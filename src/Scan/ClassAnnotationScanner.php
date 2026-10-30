@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace SuperKernel\Annotator\Scan;
 
-use ReflectionAttribute;
 use ReflectionClass;
 use ReflectionException;
 use ReflectionMethod;
@@ -12,8 +11,6 @@ use ReflectionProperty;
 use SuperKernel\Annotator\Model\AttributeMetadata;
 use SuperKernel\Contract\ReflectorInterface;
 
-use function array_unique;
-use function array_values;
 use function strcmp;
 use function usort;
 
@@ -24,8 +21,11 @@ use function usort;
  */
 final readonly class ClassAnnotationScanner
 {
-    public function __construct(private ReflectorInterface $reflector)
+    private AttributeMetadataConverter $converter;
+
+    public function __construct(ReflectorInterface $reflector)
     {
+        $this->converter = new AttributeMetadataConverter($reflector);
     }
 
     /**
@@ -45,7 +45,7 @@ final readonly class ClassAnnotationScanner
             'properties' => [],
         ];
         $class = $reflection->getName();
-        $classAttributes = $this->attributes($reflection->getAttributes());
+        $classAttributes = $this->converter->convert($reflection->getAttributes());
 
         if ([] !== $classAttributes) {
             $record['classes'][$class] = $classAttributes;
@@ -65,7 +65,7 @@ final readonly class ClassAnnotationScanner
                 continue;
             }
 
-            $attributes = $this->attributes($method->getAttributes());
+            $attributes = $this->converter->convert($method->getAttributes());
 
             if ([] !== $attributes) {
                 $record['methods'][$class][$method->getName()] = $attributes;
@@ -86,7 +86,7 @@ final readonly class ClassAnnotationScanner
                 continue;
             }
 
-            $attributes = $this->attributes($property->getAttributes());
+            $attributes = $this->converter->convert($property->getAttributes());
 
             if ([] !== $attributes) {
                 $record['properties'][$class][$property->getName()] = $attributes;
@@ -94,53 +94,5 @@ final readonly class ClassAnnotationScanner
         }
 
         return $record;
-    }
-
-    /**
-     * @param list<ReflectionAttribute<object>> $attributes
-     *
-     * @return list<AttributeMetadata<object>>
-     *
-     * @throws ReflectionException
-     */
-    private function attributes(array $attributes): array
-    {
-        $metadata = [];
-
-        foreach ($attributes as $attribute) {
-            $metadata[] = new AttributeMetadata(
-                $attribute->newInstance(),
-                $this->attributeTypes($attribute->getName()),
-            );
-        }
-
-        return $metadata;
-    }
-
-    /**
-     * @param class-string $attribute
-     *
-     * @return non-empty-list<class-string>
-     *
-     * @throws ReflectionException
-     */
-    private function attributeTypes(string $attribute): array
-    {
-        $reflection = $this->reflector->reflectClass($attribute);
-        $types = [
-            $reflection->getName(),
-        ];
-        $parent = $reflection->getParentClass();
-
-        while (false !== $parent) {
-            $types[] = $parent->getName();
-            $parent = $parent->getParentClass();
-        }
-
-        foreach ($reflection->getInterfaceNames() as $interface) {
-            $types[] = $interface;
-        }
-
-        return array_values(array_unique($types));
     }
 }

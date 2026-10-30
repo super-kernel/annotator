@@ -11,12 +11,18 @@ direct `super-kernel/scan-isolation` dependency. This package does not select a 
 
 Production classes are organized by their role:
 
-| Namespace | Classes | Responsibility |
-| --- | --- | --- |
-| `SuperKernel\Annotator\Scan` | `AnnotationScanner`, `ClassAnnotationScanner` | Package traversal and native class/member Attribute extraction. |
-| `SuperKernel\Annotator\Scan` | `AnnotationScanWorker`, `AnnotationScanSession` | Isolated callback entry and the scan-to-publication lifecycle. |
-| `SuperKernel\Annotator\Cache` | `AnnotationCache`, `SerializedPackageAnnotations`, `SerializedPackageReferences` | Cache files, serialized records, and restoration validation. |
-| `SuperKernel\Annotator` | `AnnotationCollector` | Exact and assignable method discovery through the shared collector contract. |
+| Namespace                                | Classes                                                                                                                                 | Responsibility                                                                                                                         |
+|------------------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------|
+| `SuperKernel\Annotator\Scan`             | `AnnotationScanner`, `ClassAnnotationScanner`                                                                                           | Package traversal and native class/member Attribute extraction.                                                                        |
+| `SuperKernel\Annotator\Scan`             | `AttributeMetadataConverter`                                                                                                            | Internal support for `ClassAnnotationScanner`: Attribute construction and assignable-type capture.                                     |
+| `SuperKernel\Annotator\Scan`             | `AnnotationScanWorker`, `AnnotationScanSession`                                                                                         | Isolated callback entry and the scan-to-publication lifecycle.                                                                         |
+| `SuperKernel\Annotator\Cache`            | `AnnotationCache`, `SerializedPackageAnnotations`, `SerializedPackageReferences`                                                        | Cache publication, restoration, and the serialized records.                                                                            |
+| `SuperKernel\Annotator\Cache`            | `CacheRecordDecoder`, `PackageReferenceSnapshot`                                                                                        | Internal support for `AnnotationCache`: allow-listed record decoding and current Composer references.                                  |
+| `SuperKernel\Annotator\Cache\Storage`    | `CachePath`, `CacheStorage`, `PackageRecordPath`                                                                                        | Internal cache files: guarded paths, atomic publication and removal, and package record paths.                                         |
+| `SuperKernel\Annotator\Cache\Validation` | `AttributeMapValidator`, `AttributeListValidator`, `PackageDiagnosticsValidator`, `PackageNameValidator`, `DiagnosticSequenceValidator` | Internal record validation: Attribute maps and metadata lists, diagnostic rows, normalized package names, and global diagnostic order. |
+| `SuperKernel\Annotator\Constants`        | `CacheLayout`                                                                                                                           | Cache index and package record directory names below `<vendor>/.cache/`.                                                               |
+| `SuperKernel\Annotator\Snapshot`         | `AttributeTypeList`, `AttributeSnapshotRestorer`, `AttributeSnapshotGraph`, `AttributeSnapshotDepth`                                    | Internal support for `AttributeMetadata`: concrete-first type lists and trusted snapshot restoration within 64 nested levels.          |
+| `SuperKernel\Annotator`                  | `AnnotationCollector`                                                                                                                   | Exact and assignable method discovery through the shared collector contract.                                                           |
 
 `ClassAnnotationScanner` remains the shared extraction entry for DI bootstrap. `AnnotationScanWorker` remains a
 provider callback implementation; its placement under `Scan` does not change who owns process execution.
@@ -110,13 +116,13 @@ contribute diagnostics only when they implement that capability.
 
 Every row has exactly these fields:
 
-| Field | Value |
-| --- | --- |
-| `sequence` | Positive integer, globally contiguous from 1 through N for one complete scan. |
-| `package` | Normalized non-empty Composer package name, equal to the containing record's owner. |
-| `class` | Non-empty captured class-name string; not an autoload request. |
-| `exception_type` | Non-empty concrete throwable-name string; anonymous names may contain NUL. |
-| `message` | Original string bytes, including empty messages, control bytes, and non-UTF-8 content. |
+| Field            | Value                                                                                  |
+|------------------|----------------------------------------------------------------------------------------|
+| `sequence`       | Positive integer, globally contiguous from 1 through N for one complete scan.          |
+| `package`        | Normalized non-empty Composer package name, equal to the containing record's owner.    |
+| `class`          | Non-empty captured class-name string; not an autoload request.                         |
+| `exception_type` | Non-empty concrete throwable-name string; anonymous names may contain NUL.             |
+| `message`        | Original string bytes, including empty messages, control bytes, and non-UTF-8 content. |
 
 No Throwable, trace, resource, timestamp, logger, or output-state flag is serialized. Diagnostic strings can contain
 paths or application data; neither caching nor structured logging redacts them. Retrieval never reflects or loads
@@ -289,6 +295,9 @@ The injected `VendorDirInterface` determines the cache root, including custom ve
     ├── super-kernel/reflector.ser
     └── vendor/package.ser
 ```
+
+`Constants\CacheLayout` names the index file (`IndexPath`, `packages.ser`) and the package record directory
+(`PackageDirectory`, `annotations`) relative to `<vendor>/.cache/`.
 
 Each package file is the raw serialization of one validated package annotation record. `packages.ser` is published
 last and is the raw serialized stub mapping every current package name to the exact nullable `reference()` value from
