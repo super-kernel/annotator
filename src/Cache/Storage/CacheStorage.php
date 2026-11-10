@@ -9,6 +9,7 @@ use RecursiveDirectoryIterator;
 use RecursiveIteratorIterator;
 use SuperKernel\Annotator\Exception\AnnotationCacheException;
 
+use function chmod;
 use function dirname;
 use function file_get_contents;
 use function file_put_contents;
@@ -20,6 +21,7 @@ use function rename;
 use function rmdir;
 use function strlen;
 use function tempnam;
+use function umask;
 use function unlink;
 
 /**
@@ -56,7 +58,8 @@ final readonly class CacheStorage
     }
 
     /**
-     * Publishes the contents through a same-directory temporary file and an atomic rename.
+     * Publishes the contents through a same-directory temporary file and an atomic rename, with the permissions
+     * of a newly created file under the current umask.
      *
      * @throws AnnotationCacheException When the path cannot be resolved or the contents cannot be published
      */
@@ -73,6 +76,7 @@ final readonly class CacheStorage
             if (
                 realpath(dirname($path)) !== realpath(dirname($temporary))
                 || strlen($contents) !== @file_put_contents($temporary, $contents)
+                || !@chmod($temporary, 0o666 & ~umask())
                 || !@rename($temporary, $path)
             ) {
                 throw new AnnotationCacheException('Unable to publish the annotation cache file.');

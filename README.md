@@ -135,6 +135,38 @@ $records = $scanner->scan();
 
 `Diagnostic\DiagnosticOutput::formatWarning(array $diagnostic): string` returns that ANSI warning without its terminal newline; `writeToStderr(array $diagnostics): void` writes the lines in order and throws if writing fails. These stateless helpers have no DI binding.
 
+## Publishing and restoring without scanning
+
+A build tool that collects Attributes itself publishes the records with `Cache\AnnotationPublisher`. `Cache\AnnotationCache::read()` then restores the collector without a scan processor and never scans:
+
+```php
+use SuperKernel\Annotator\Cache\AnnotationCache;
+use SuperKernel\Annotator\Cache\AnnotationPublisher;
+use SuperKernel\Annotator\Model\AttributeMetadata;
+use SuperKernel\Annotator\Model\PackageAnnotations;
+
+/** @var SuperKernel\Contract\PackageManagerInterface $packages */
+/** @var SuperKernel\Contract\VendorDirInterface $vendorDir */
+$records = [];
+
+foreach ($packages->all() as $package) {
+    $records[] = new PackageAnnotations($package->name(), $package->reference(), [], [], []);
+}
+
+$records[0] = new PackageAnnotations($records[0]->packageName(), $records[0]->reference(), [
+    App\Controller\HomeController::class => [
+        new AttributeMetadata(new App\Attribute\Controller()),
+    ],
+], [], []);
+
+new AnnotationPublisher($vendorDir)->publish($packages, $records);
+$collector = new AnnotationCache($vendorDir)->read($packages);
+```
+
+- `publish()` requires exactly one `Model\PackageAnnotations` record for every package of the package manager, with the same `reference()`. Records may arrive in any order and their class and member maps unsorted; the published files are the same for the same content. Diagnostic sequences run from 1 through N across all records.
+- When a record is not a `PackageAnnotations` model or does not match the package manager, `publish()` raises `Exception\AnnotationCacheException`. Any failure removes every annotation record before the exception propagates, so a later `read()` fails instead of returning partial data.
+- `read()` raises `Exception\AnnotationCacheException` when `packages.ser` is missing, when its references differ from the package manager, or when a record is missing or invalid. It writes the diagnostics validated so far to STDERR before rethrowing.
+
 ## Cache files and failures
 
 The injected `VendorDirInterface` determines the cache root, including custom vendor directories:
