@@ -8,20 +8,17 @@ use PHPUnit\Framework\Attributes\DataProvider;
 use RuntimeException;
 use SuperKernel\Annotator\AnnotationCollector;
 use SuperKernel\Annotator\Cache\AnnotationCache;
+use SuperKernel\Annotator\Cache\AnnotationPublisher;
 use SuperKernel\Annotator\Cache\SerializedPackageAnnotations;
 use SuperKernel\Annotator\Cache\SerializedPackageReferences;
-use SuperKernel\Annotator\Diagnostic\DiagnosticOutput;
 use SuperKernel\Annotator\Exception\AnnotationCacheException;
 use SuperKernel\Annotator\Model\PackageAnnotations;
-use SuperKernel\Annotator\Scan\AnnotationScanner;
 use SuperKernel\Annotator\Tests\Support\TemporaryVendorDirectory;
 use SuperKernel\Annotator\Tests\Support\TestCase;
 use SuperKernel\Contract\PackageAnnotationsInterface;
-use SuperKernel\Contract\ReflectorInterface;
 use SuperKernel\Contract\ScanDiagnosticsInterface;
 use Throwable;
 
-use function array_column;
 use function array_keys;
 use function class_exists;
 use function serialize;
@@ -31,53 +28,50 @@ use function str_repeat;
 
 final class ScanDiagnosticsTest extends TestCase
 {
-    /** @throws Throwable When fixture setup or scanning fails */
-    public function testStructuredReporterPersistsOriginalBytesAndScanOrderAcrossSortedPackages(): void
+    /** @throws Throwable When fixture setup, publication, or restoration fails */
+    public function testPublishedDiagnosticsKeepOriginalBytesAndBuildOrderAcrossSortedPackages(): void
     {
-        $z = $this->package('z/root', null);
-        $a = $this->package('a/dependency', null);
         $manager = $this->packageManager([
-            $z,
-            $a,
-        ], [
-            'Unloaded\\Root'       => __DIR__ . '/../Fixture/AnnotatedFixture.php',
-            'Unloaded\\Dependency' => __DIR__ . '/../Fixture/AnnotatedFixture.php',
-        ], [
-            'Unloaded\\Root'       => $z,
-            'Unloaded\\Dependency' => $a,
+            $this->package('z/root', null),
+            $this->package('a/dependency', null),
         ]);
-        $failure = new class("\x00\n\r\t\033\xff" . str_repeat('x', 8192)) extends RuntimeException {};
-        $reflector = $this->createStub(ReflectorInterface::class);
-        $reflector->method('reflectClass')->willThrowException($failure);
-        $captured = [];
-        $scanner = new AnnotationScanner($manager, $reflector, diagnosticReporter: static function (
-            array $row,
-        ) use (&$captured): void {
-            $captured[] = $row;
-        });
-        $records = $scanner->scan();
-        $collector = new AnnotationCollector($records);
+        $failure = new class('') extends RuntimeException {};
+        $root = [
+            'sequence'       => 1,
+            'package'        => 'z/root',
+            'class'          => 'Unloaded\\Root',
+            'exception_type' => $failure::class,
+            'message'        => "\x00\n\r\t\033\xff" . str_repeat('x', 8192),
+        ];
+        $dependency = [
+            'sequence'       => 2,
+            'package'        => 'a/dependency',
+            'class'          => 'Unloaded\\Dependency',
+            'exception_type' => 'Error',
+            'message'        => '',
+        ];
+        $vendor = new TemporaryVendorDirectory();
+        new AnnotationPublisher($vendor)->publish($manager, [
+            new PackageAnnotations('z/root', null, [], [], [], [
+                $root,
+            ]),
+            new PackageAnnotations('a/dependency', null, [], [], [], [
+                $dependency,
+            ]),
+        ]);
+
+        $restored = new AnnotationCache($vendor)->read($manager);
+
         self::assertSame([
             'a/dependency',
             'z/root',
-        ], array_keys($collector->getPackages()));
-        self::assertSame($captured, $collector->getDiagnostics());
-        self::assertSame([
-            1,
-            2,
-        ], array_column($captured, 'sequence'));
-        self::assertSame([
-            'Unloaded\\Root',
-            'Unloaded\\Dependency',
-        ], array_column($captured, 'class'));
-        self::assertSame($failure::class, $captured[0]['exception_type']);
-        self::assertSame($failure->getMessage(), $captured[0]['message']);
-        self::assertSame([], $collector->getClassAttributes('Unloaded\\Root'));
-        $cache = new AnnotationCache(new TemporaryVendorDirectory());
-        $cache->write($manager, $records);
-        $restored = $cache->read($manager);
+        ], array_keys($restored->getPackages()));
         self::assertInstanceOf(ScanDiagnosticsInterface::class, $restored);
-        self::assertSame($captured, $restored->getDiagnostics());
+        self::assertSame([
+            $root,
+            $dependency,
+        ], $restored->getDiagnostics());
+        self::assertSame([], $restored->getClassAttributes('Unloaded\\Root'));
         self::assertFalse(class_exists('Unloaded\\Root', false));
         self::assertFalse(class_exists('Unloaded\\Dependency', false));
     }
@@ -92,17 +86,6 @@ final class ScanDiagnosticsTest extends TestCase
         ]);
         self::assertSame($package, $collector->getPackage('legacy/package'));
         self::assertSame([], $collector->getDiagnostics());
-    }
-
-    public function testEmergencyFormatPreservesEveryLegacyByte(): void
-    {
-        $row = self::diagnostic();
-        $row['message'] = "message.\n\033\x00\xff";
-        self::assertSame(
-            "\033[33mAnnotation scan warning: Skipping class Missing\\Subject because Missing\\Failure was thrown: "
-            . $row['message'] . ".\033[0m",
-            DiagnosticOutput::formatWarning($row),
-        );
     }
 
     /**
@@ -296,7 +279,7 @@ final class ScanDiagnosticsTest extends TestCase
     }
 
     /** @throws Throwable When cache preparation fails */
-    public function testPartialRestorationKeepsTheOriginalFailureAfterFlushingOnlyValidatedRows(): void
+    public function testPartialRestorationRaisesTheOriginalFailure(): void
     {
         $manager = $this->packageManager([
             $this->package('acme/fixture', null),

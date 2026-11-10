@@ -1,15 +1,11 @@
 {
     "name": "super-kernel/annotator",
-    "description": "Isolated package-aware PHP attribute collection for SuperKernel.",
+    "description": "Restores and queries build-generated, package-aware PHP attribute records for SuperKernel.",
     "type": "library",
     "license": "MIT",
     "require": {
         "php": ">=8.4.27 <8.5",
-        "ext-reflection": "*",
-        "ext-tokenizer": "*",
-        "super-kernel/attribute": "self.version",
-        "super-kernel/contract": "self.version",
-        "super-kernel/scan-isolation": "self.version"
+        "super-kernel/contract": "self.version"
     },
     "require-dev": {
         "friendsofphp/php-cs-fixer": "^3.95.27",
