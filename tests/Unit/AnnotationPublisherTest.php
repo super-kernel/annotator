@@ -16,6 +16,8 @@ use SuperKernel\Annotator\Tests\Support\TestCase;
 use Throwable;
 
 use function array_keys;
+use function fileperms;
+use function umask;
 
 final class AnnotationPublisherTest extends TestCase
 {
@@ -82,6 +84,11 @@ final class AnnotationPublisherTest extends TestCase
         new AnnotationPublisher($sortedVendor)->publish($manager, $sorted);
 
         self::assertSame($sortedVendor->files(), $unsortedVendor->files());
+        self::assertSame(0o666 & ~umask(), fileperms($unsortedVendor . '/.cache/packages.ser') & 0o777);
+        self::assertSame(
+            0o666 & ~umask(),
+            fileperms($unsortedVendor . '/.cache/annotations/acme/library.ser') & 0o777,
+        );
 
         $collector = new AnnotationCache($unsortedVendor)->read($manager);
 
