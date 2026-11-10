@@ -7,9 +7,9 @@
         "php": ">=8.4.27 <8.5",
         "ext-reflection": "*",
         "ext-tokenizer": "*",
-        "super-kernel/attribute": "dev-main",
-        "super-kernel/contract": "dev-main",
-        "super-kernel/scan-isolation": "dev-main"
+        "super-kernel/attribute": "self.version",
+        "super-kernel/contract": "self.version",
+        "super-kernel/scan-isolation": "self.version"
     },
     "require-dev": {
         "friendsofphp/php-cs-fixer": "^3.95.27",
