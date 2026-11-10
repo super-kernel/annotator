@@ -164,7 +164,7 @@ $collector = new AnnotationCache($vendorDir)->read($packages);
 ```
 
 - `publish()` requires exactly one `Model\PackageAnnotations` record for every package of the package manager, with the same `reference()`. Records may arrive in any order and their class and member maps unsorted; the published files are the same for the same content. Diagnostic sequences run from 1 through N across all records.
-- When a record is not a `PackageAnnotations` model or does not match the package manager, `publish()` raises `Exception\AnnotationCacheException`. Any failure removes every annotation record before the exception propagates, so a later `read()` fails instead of returning partial data.
+- When a record is not a `PackageAnnotations` model, a package has more than one record, or a record does not match the package manager, `publish()` raises `Exception\AnnotationCacheException`. Any failure removes every annotation record before the exception propagates, so a later `read()` fails instead of returning partial data.
 - `read()` raises `Exception\AnnotationCacheException` when `packages.ser` is missing, when its references differ from the package manager, or when a record is missing or invalid. It writes the diagnostics validated so far to STDERR before rethrowing.
 
 ## Cache files and failures
