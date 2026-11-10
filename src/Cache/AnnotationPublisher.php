@@ -10,7 +10,9 @@ use SuperKernel\Contract\PackageManagerInterface;
 use SuperKernel\Contract\VendorDirInterface;
 use Throwable;
 
+use function array_values;
 use function ksort;
+use function sprintf;
 
 use const SORT_STRING;
 
@@ -34,8 +36,8 @@ final readonly class AnnotationPublisher
      * @param list<PackageAnnotations> $annotations    Exactly one record per package of the manager; diagnostic
      *                                                 sequences run from 1 through N across the whole build
      *
-     * @throws AnnotationCacheException When a record is not a PackageAnnotations model or the records are inconsistent
-     *                                  with the package manager
+     * @throws AnnotationCacheException When a record is not a PackageAnnotations model, a package has more than one
+     *                                  record, or the records are inconsistent with the package manager
      * @throws Throwable                When publication fails, after the annotation records were removed
      */
     public function publish(PackageManagerInterface $packageManager, array $annotations): void
@@ -58,9 +60,16 @@ final readonly class AnnotationPublisher
                     throw new AnnotationCacheException('Every published annotation record must be PackageAnnotations.');
                 }
 
+                if (isset($records[$record->packageName()])) {
+                    throw new AnnotationCacheException(sprintf(
+                        'Package %s has more than one published annotation record.',
+                        $record->packageName(),
+                    ));
+                }
+
                 $classes = $record->classAttributes();
                 ksort($classes, SORT_STRING);
-                $records[] = new PackageAnnotations(
+                $records[$record->packageName()] = new PackageAnnotations(
                     $record->packageName(),
                     $record->reference(),
                     $classes,
@@ -70,7 +79,7 @@ final readonly class AnnotationPublisher
                 );
             }
 
-            $this->cache->write($packageManager, $records);
+            $this->cache->write($packageManager, array_values($records));
         } catch (Throwable $exception) {
             try {
                 $this->cache->invalidate();

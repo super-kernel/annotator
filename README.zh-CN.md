@@ -164,7 +164,7 @@ $collector = new AnnotationCache($vendorDir)->read($packages);
 ```
 
 - `publish()` 要求包管理器中的每个包都恰好有一条 `Model\PackageAnnotations` 记录，且 `reference()` 相同。记录可以以任意顺序到达，其类映射和成员映射可以未排序；相同内容发布出的文件相同。诊断序号在所有记录中从 1 连续到 N。
-- 当某条记录不是 `PackageAnnotations` 模型或与包管理器不一致时，`publish()` 抛出 `Exception\AnnotationCacheException`。任何失败都会在异常传播之前删除全部注解记录，因此之后的 `read()` 会失败，而不是返回不完整的数据。
+- 当某条记录不是 `PackageAnnotations` 模型、某个包有多条记录，或某条记录与包管理器不一致时，`publish()` 抛出 `Exception\AnnotationCacheException`。任何失败都会在异常传播之前删除全部注解记录，因此之后的 `read()` 会失败，而不是返回不完整的数据。
 - 当 `packages.ser` 缺失、其 reference 与包管理器不一致，或某条记录缺失或无效时，`read()` 抛出 `Exception\AnnotationCacheException`。它会在重新抛出之前把已经校验过的诊断写到 STDERR。
 
 ## 缓存文件与失败

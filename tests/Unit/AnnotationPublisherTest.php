@@ -140,6 +140,36 @@ final class AnnotationPublisherTest extends TestCase
         );
     }
 
+    /** @throws Throwable When fixture setup or the operation under test throws */
+    public function testRepeatedPackageRecordIsRejectedAndRemovesEveryRecord(): void
+    {
+        $manager = $this->packageManager([
+            $this->package('acme/app', null),
+            $this->package('acme/library', 'reference-a'),
+        ]);
+        $vendorDir = new TemporaryVendorDirectory();
+        $publisher = new AnnotationPublisher($vendorDir);
+        $publisher->publish($manager, [
+            new PackageAnnotations('acme/app', null, [], [], []),
+            new PackageAnnotations('acme/library', 'reference-a', [], [], []),
+        ]);
+        self::assertNotSame([], $vendorDir->files());
+
+        $this->assertCacheFailure(
+            static fn() => $publisher->publish($manager, [
+                new PackageAnnotations('acme/library', 'reference-a', [
+                    'Acme\\Alpha' => [
+                        new AttributeMetadata(new CollectedAttribute('value', FixtureMode::Ready)),
+                    ],
+                ], [], []),
+                new PackageAnnotations('acme/library', 'reference-a', [], [], []),
+                new PackageAnnotations('acme/app', null, [], [], []),
+            ]),
+            'Package acme/library has more than one published annotation record.',
+        );
+        self::assertSame([], $vendorDir->files());
+    }
+
     /**
      * @param callable(): mixed $operation
      */
