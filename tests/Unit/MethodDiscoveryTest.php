@@ -5,20 +5,14 @@ declare(strict_types=1);
 namespace SuperKernel\Annotator\Tests\Unit;
 
 use PHPUnit\Framework\TestCase;
-use ReflectionClass;
-use ReflectionException;
 use Stringable;
 use SuperKernel\Annotator\AnnotationCollector;
 use SuperKernel\Annotator\Model\AttributeMetadata;
 use SuperKernel\Annotator\Model\PackageAnnotations;
-use SuperKernel\Annotator\Scan\ClassAnnotationScanner;
-use SuperKernel\Annotator\Tests\Fixture\AnnotatedParent;
 use SuperKernel\Annotator\Tests\Fixture\CollectedAttribute;
 use SuperKernel\Annotator\Tests\Fixture\DerivedMethodAttribute;
-use SuperKernel\Annotator\Tests\Fixture\MethodAnnotatedFixture;
 use SuperKernel\Contract\AttributeMetadataInterface;
 use SuperKernel\Contract\PackageAnnotationsInterface;
-use SuperKernel\Contract\ReflectorInterface;
 
 use function class_exists;
 
@@ -203,47 +197,55 @@ final class MethodDiscoveryTest extends TestCase
         );
     }
 
-    /** @throws ReflectionException When the method fixtures cannot be scanned */
-    public function testIndexesScannedMethodsUnderTheirDeclaringClassWithoutChangingMemberLookup(): void
+    public function testIndexesMethodsUnderTheirDeclaringClassWithoutChangingMemberLookup(): void
     {
-        $reflector = $this->createStub(ReflectorInterface::class);
-        $reflector->method('reflectClass')->willReturnCallback(
-            static fn(object|string $class): ReflectionClass => new ReflectionClass($class),
-        );
-        $scanner = new ClassAnnotationScanner($reflector);
-        $child = $scanner->collect(new ReflectionClass(MethodAnnotatedFixture::class));
-        $parent = $scanner->collect(new ReflectionClass(AnnotatedParent::class));
         $collector = new AnnotationCollector([
-            new PackageAnnotations('acme/fixture', null, [], $child['methods'] + $parent['methods'], []),
+            new PackageAnnotations('acme/fixture', null, [], [
+                'Acme\\AnnotatedChild' => [
+                    'handle' => [
+                        new AttributeMetadata(new CollectedAttribute('first')),
+                        new AttributeMetadata(new DerivedMethodAttribute('derived'), [
+                            CollectedAttribute::class,
+                            Stringable::class,
+                        ]),
+                        new AttributeMetadata(new CollectedAttribute('second')),
+                    ],
+                ],
+                'Acme\\AnnotatedParent' => [
+                    'inherited' => [
+                        new AttributeMetadata(new CollectedAttribute('inherited-method')),
+                    ],
+                ],
+            ], []),
         ]);
-        $attributes = $collector->getMethodAttributes(MethodAnnotatedFixture::class, 'handle');
+        $attributes = $collector->getMethodAttributes('Acme\\AnnotatedChild', 'handle');
 
         self::assertCount(3, $attributes);
         self::assertSame([
-            MethodAnnotatedFixture::class => [
+            'Acme\\AnnotatedChild' => [
                 'handle' => [
                     $attributes[0],
                     $attributes[2],
                 ],
             ],
-            AnnotatedParent::class => [
+            'Acme\\AnnotatedParent' => [
                 'inherited' => $collector->getMethodAttributes(
-                    AnnotatedParent::class,
+                    'Acme\\AnnotatedParent',
                     'inherited',
                 ),
             ],
         ], $collector->getMethodsWithAttribute(CollectedAttribute::class));
         self::assertSame($attributes, $collector->getMethodsWithAttributeAssignableTo(
             CollectedAttribute::class,
-        )[MethodAnnotatedFixture::class]['handle']);
+        )['Acme\\AnnotatedChild']['handle']);
         self::assertSame([
-            MethodAnnotatedFixture::class => [
+            'Acme\\AnnotatedChild' => [
                 'handle' => [
                     $attributes[1],
                 ],
             ],
         ], $collector->getMethodsWithAttributeAssignableTo(Stringable::class));
-        self::assertSame([], $collector->getMethodAttributes(MethodAnnotatedFixture::class, 'inherited'));
+        self::assertSame([], $collector->getMethodAttributes('Acme\\AnnotatedChild', 'inherited'));
     }
 
 }

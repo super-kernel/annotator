@@ -5,10 +5,8 @@ declare(strict_types=1);
 namespace SuperKernel\Annotator\Tests\Support;
 
 use PHPUnit\Framework\TestCase as PHPUnitTestCase;
-use ReflectionClass;
 use SuperKernel\Contract\PackageManagerInterface;
 use SuperKernel\Contract\PackageMetadataInterface;
-use SuperKernel\Contract\ReflectorInterface;
 use Throwable;
 
 use function array_filter;
@@ -74,16 +72,5 @@ abstract class TestCase extends PHPUnitTestCase
         );
 
         return $manager;
-    }
-
-    /** @throws Throwable When fixture setup or a supplied test callback fails */
-    protected function reflector(): ReflectorInterface
-    {
-        $reflector = $this->createStub(ReflectorInterface::class);
-        $reflector->method('reflectClass')->willReturnCallback(
-            static fn(object|string $class): ReflectionClass => new ReflectionClass($class),
-        );
-
-        return $reflector;
     }
 }

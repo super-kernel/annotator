@@ -10,8 +10,6 @@ use ReflectionMethod;
 use SuperKernel\Annotator\AnnotationCollector;
 use SuperKernel\Annotator\Model\AttributeMetadata;
 use SuperKernel\Annotator\Model\PackageAnnotations;
-use SuperKernel\Annotator\Tests\Fixture\AnnotatedFixture;
-use SuperKernel\Annotator\Tests\Fixture\AnnotatedParent;
 use SuperKernel\Annotator\Tests\Fixture\CollectedAttribute;
 use SuperKernel\Annotator\Tests\Fixture\DerivedCollectedAttribute;
 use SuperKernel\Contract\AnnotationCollectorInterface;
@@ -49,19 +47,19 @@ final class AnnotationCollectorTest extends TestCase
             ]);
         }
         $classes = [
-            AnnotatedFixture::class => [
+            'Acme\\Annotated' => [
                 $metadata,
             ],
         ];
         $methods = [
-            AnnotatedFixture::class => [
+            'Acme\\Annotated' => [
                 'handle' => [
                     $metadata,
                 ],
             ],
         ];
         $properties = [
-            AnnotatedFixture::class => [
+            'Acme\\Annotated' => [
                 'value' => [
                     $metadata,
                 ],
@@ -87,9 +85,9 @@ final class AnnotationCollectorTest extends TestCase
         self::assertSame($package, $collector->getPackage('ACME/FIXTURE'));
         self::assertNull($collector->getPackage('acme/missing'));
         self::assertSame($package, $collector->getPackages()['acme/fixture']);
-        self::assertSame($metadata, $collector->getClassAttributes(AnnotatedFixture::class)[0]);
-        self::assertSame($metadata, $collector->getMethodAttributes(AnnotatedFixture::class, 'handle')[0]);
-        self::assertSame($metadata, $collector->getPropertyAttributes(AnnotatedFixture::class, 'value')[0]);
+        self::assertSame($metadata, $collector->getClassAttributes('Acme\\Annotated')[0]);
+        self::assertSame($metadata, $collector->getMethodAttributes('Acme\\Annotated', 'handle')[0]);
+        self::assertSame($metadata, $collector->getPropertyAttributes('Acme\\Annotated', 'value')[0]);
         self::assertSame($classes, $collector->getClassesWithAttribute(DerivedCollectedAttribute::class));
         self::assertSame($classes, $collector->getClassesWithAttributeAssignableTo(CollectedAttribute::class));
         self::assertSame([], $collector->getClassesWithAttribute(CollectedAttribute::class));
@@ -98,7 +96,7 @@ final class AnnotationCollectorTest extends TestCase
         self::assertSame([], $collector->getMethodsWithAttribute(CollectedAttribute::class));
         self::assertSame(
             $attribute,
-            $collector->getMethodAttributes(AnnotatedFixture::class, 'handle')[0]->attribute(),
+            $collector->getMethodAttributes('Acme\\Annotated', 'handle')[0]->attribute(),
         );
     }
 
@@ -112,11 +110,11 @@ final class AnnotationCollectorTest extends TestCase
         $repeated = new AttributeMetadata(new CollectedAttribute('repeated'));
         $collector = new AnnotationCollector([
             new PackageAnnotations('acme/fixture', null, [
-                AnnotatedFixture::class => [
+                'Acme\\Annotated' => [
                     $first,
                     $other,
                 ],
-                AnnotatedParent::class => [
+                'Acme\\AnnotatedParent' => [
                     $second,
                     $repeated,
                 ],
@@ -124,10 +122,10 @@ final class AnnotationCollectorTest extends TestCase
         ]);
 
         self::assertSame([
-            AnnotatedFixture::class => [
+            'Acme\\Annotated' => [
                 $first,
             ],
-            AnnotatedParent::class => [
+            'Acme\\AnnotatedParent' => [
                 $second,
                 $repeated,
             ],
@@ -144,25 +142,25 @@ final class AnnotationCollectorTest extends TestCase
         ]);
         $collector = new AnnotationCollector([
             new PackageAnnotations('acme/fixture', null, [
-                AnnotatedFixture::class => [
+                'Acme\\Annotated' => [
                     $derived,
                 ],
-                AnnotatedParent::class => [
+                'Acme\\AnnotatedParent' => [
                     $base,
                 ],
             ], [], []),
         ]);
 
         self::assertSame([
-            AnnotatedFixture::class => [
+            'Acme\\Annotated' => [
                 $derived,
             ],
-            AnnotatedParent::class => [
+            'Acme\\AnnotatedParent' => [
                 $base,
             ],
         ], $collector->getClassesWithAttributeAssignableTo(CollectedAttribute::class));
         self::assertSame([
-            AnnotatedParent::class => [
+            'Acme\\AnnotatedParent' => [
                 $base,
             ],
         ], $collector->getClassesWithAttribute(CollectedAttribute::class));

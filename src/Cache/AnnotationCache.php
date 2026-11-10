@@ -10,7 +10,6 @@ use SuperKernel\Annotator\Cache\Storage\CacheStorage;
 use SuperKernel\Annotator\Cache\Storage\PackageRecordPath;
 use SuperKernel\Annotator\Cache\Validation\DiagnosticSequenceValidator;
 use SuperKernel\Annotator\Constants\CacheLayout;
-use SuperKernel\Annotator\Diagnostic\DiagnosticOutput;
 use SuperKernel\Annotator\Exception\AnnotationCacheException;
 use SuperKernel\Annotator\Model\PackageAnnotations;
 use SuperKernel\Contract\AnnotationCollectorInterface;
@@ -105,7 +104,9 @@ final readonly class AnnotationCache
     }
 
     /**
-     * @throws Throwable When cache restoration fails, after flushing already validated diagnostics
+     * Restores the published records without scanning sources or loading the annotated classes.
+     *
+     * @throws AnnotationCacheException When the records are missing, invalid, or do not match the package manager
      */
     public function read(PackageManagerInterface $packageManager): AnnotationCollectorInterface
     {
@@ -124,33 +125,23 @@ final readonly class AnnotationCache
 
         $packages = [];
 
-        try {
-            foreach ($references as $packageName => $reference) {
-                $path = PackageRecordPath::fromPackageName($packageName);
+        foreach ($references as $packageName => $reference) {
+            $path = PackageRecordPath::fromPackageName($packageName);
 
-                if (!$this->storage->isFile($path)) {
-                    throw new AnnotationCacheException(sprintf(
-                        'The annotation cache for package %s is unavailable.',
-                        $packageName,
-                    ));
-                }
-
-                $packages[] = CacheRecordDecoder::decodePackage($this->storage->read($path), $packageName, $reference)
-                    ->annotations();
+            if (!$this->storage->isFile($path)) {
+                throw new AnnotationCacheException(sprintf(
+                    'The annotation cache for package %s is unavailable.',
+                    $packageName,
+                ));
             }
 
-            DiagnosticSequenceValidator::validate($packages);
-
-            return new AnnotationCollector($packages);
-        } catch (Throwable $exception) {
-            try {
-                DiagnosticOutput::writeToStderr(new AnnotationCollector($packages)->getDiagnostics());
-            } catch (Throwable) {
-                // Preserve the cache failure if emergency output also fails.
-            }
-
-            throw $exception;
+            $packages[] = CacheRecordDecoder::decodePackage($this->storage->read($path), $packageName, $reference)
+                ->annotations();
         }
+
+        DiagnosticSequenceValidator::validate($packages);
+
+        return new AnnotationCollector($packages);
     }
 
     /**

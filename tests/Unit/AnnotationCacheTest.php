@@ -7,16 +7,15 @@ namespace SuperKernel\Annotator\Tests\Unit;
 use PHPUnit\Framework\Attributes\DataProvider;
 use ReflectionClass;
 use SuperKernel\Annotator\Cache\AnnotationCache;
+use SuperKernel\Annotator\Cache\AnnotationPublisher;
 use SuperKernel\Annotator\Cache\SerializedPackageAnnotations;
 use SuperKernel\Annotator\Cache\SerializedPackageReferences;
 use SuperKernel\Annotator\Constants\CacheLayout;
 use SuperKernel\Annotator\Exception\AnnotationCacheException;
 use SuperKernel\Annotator\Model\AttributeMetadata;
 use SuperKernel\Annotator\Model\PackageAnnotations;
-use SuperKernel\Annotator\Provider\AnnotationCollectorProvider;
 use SuperKernel\Annotator\Tests\Fixture\CollectedAttribute;
 use SuperKernel\Annotator\Tests\Fixture\FixtureMode;
-use SuperKernel\Annotator\Tests\Support\CallbackScanProcessor;
 use SuperKernel\Annotator\Tests\Support\TemporaryVendorDirectory;
 use SuperKernel\Annotator\Tests\Support\TestCase;
 use Throwable;
@@ -104,10 +103,11 @@ final class AnnotationCacheTest extends TestCase
     }
 
     /** @throws Throwable When fixture setup or the operation under test throws */
-    public function testInvalidationPreservesTheComposerClassCache(): void
+    public function testInvalidationPreservesThePackageMetadataFiles(): void
     {
         $vendorDir = new TemporaryVendorDirectory();
-        $vendorDir->write('classes/acme/fixture.ser', 'composer cache');
+        $vendorDir->write('build.json', 'build stamp');
+        $vendorDir->write('metadata.ser', 'package metadata');
         $cache = new AnnotationCache($vendorDir);
         $cache->write($this->packageManager([
             $this->package('acme/fixture', null),
@@ -118,7 +118,8 @@ final class AnnotationCacheTest extends TestCase
         $cache->invalidate();
 
         self::assertSame([
-            'classes/acme/fixture.ser' => 'composer cache',
+            'build.json'   => 'build stamp',
+            'metadata.ser' => 'package metadata',
         ], $vendorDir->files());
         self::assertDirectoryDoesNotExist($vendorDir . '/.cache/annotations');
         self::assertDirectoryDoesNotExist($vendorDir . '/.runtime');
@@ -253,7 +254,7 @@ final class AnnotationCacheTest extends TestCase
      * @throws Throwable When fixture setup or the operation under test throws
      */
     #[DataProvider('legacyCacheEntries')]
-    public function testRejectsLegacyNamespacesAndRebuildsTheirCacheDuringANormalScan(
+    public function testRejectsLegacyNamespacesUntilTheRecordsArePublishedAgain(
         string $path,
         string $legacyClass,
         array  $properties,
@@ -267,7 +268,7 @@ final class AnnotationCacheTest extends TestCase
         $cache->write($manager, [
             self::record('acme/fixture', null),
         ]);
-        $vendorDir->write('classes/acme/fixture.ser', 'composer cache');
+        $vendorDir->write('metadata.ser', 'package metadata');
         $serializedProperties = '';
 
         foreach ($properties as $name => $value) {
@@ -284,17 +285,15 @@ final class AnnotationCacheTest extends TestCase
 
         try {
             $cache->read($manager);
-            self::fail('A cache record from the former namespace must require a normal rescan.');
+            self::fail('A cache record from the former namespace must require a new publication.');
         } catch (AnnotationCacheException $exception) {
             self::assertStringContainsString('invalid', $exception->getMessage());
         }
 
-        $collector = new AnnotationCollectorProvider()(
-            $manager,
-            new CallbackScanProcessor(),
-            $this->reflector(),
-            $vendorDir,
-        );
+        new AnnotationPublisher($vendorDir)->publish($manager, [
+            self::record('acme/fixture', null),
+        ]);
+        $collector = $cache->read($manager);
 
         self::assertSame([
             'acme/fixture',
@@ -303,7 +302,7 @@ final class AnnotationCacheTest extends TestCase
             str_replace('\\Internal\\', '\\Cache\\', $legacyClass),
             $vendorDir->read($path),
         );
-        self::assertSame('composer cache', $vendorDir->read('classes/acme/fixture.ser'));
+        self::assertSame('package metadata', $vendorDir->read('metadata.ser'));
     }
 
     /** @return iterable<string, array{string, string, array<string, mixed>}> */

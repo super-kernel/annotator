@@ -12,6 +12,7 @@ use SuperKernel\Annotator\Model\AttributeMetadata;
 use SuperKernel\Annotator\Tests\Fixture\CollectedAttribute;
 use SuperKernel\Annotator\Tests\Fixture\DerivedCollectedAttribute;
 use SuperKernel\Annotator\Tests\Fixture\FixtureMode;
+use SuperKernel\Annotator\Tests\Fixture\UnserializableCollectedAttribute;
 use Throwable;
 use UnexpectedValueException;
 
@@ -62,6 +63,14 @@ final class AttributeMetadataTest extends TestCase
         new AttributeMetadata(new CollectedAttribute('value'), [
             Stringable::class,
         ]);
+    }
+
+    public function testRejectsAnAttributeThatCannotBeSerialized(): void
+    {
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessageIsOrContains('must support trusted serialization and restoration');
+
+        new AttributeMetadata(new UnserializableCollectedAttribute());
     }
 
     /** @throws Throwable When fixture setup or the operation under test throws */
